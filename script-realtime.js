@@ -512,15 +512,64 @@ async function interpretSong(track, interpretType) {
     const song = track.name;
     const artist = track.artists[0].name;
     
-    return {
-        originalLyrics: `[실시간 데이터] "${song}" by ${artist}
+    try {
+        // Genius API로 가사 검색
+        console.log('Searching lyrics for:', song, artist);
+        const geniusResponse = await fetch(`${API_BASE_URL}/genius-search?q=${encodeURIComponent(song + ' ' + artist)}`);
         
-실시간 가사 API가 연동되면 여기에 원문 가사가 표시됩니다.
-현재는 데모 버전입니다.`,
+        if (!geniusResponse.ok) {
+            throw new Error('Lyrics search failed');
+        }
         
-        translatedLyrics: getTranslatedDemo(song, artist, interpretType),
-        songMeaning: getSongMeaningDemo(song, artist, interpretType)
-    };
+        const geniusData = await geniusResponse.json();
+        
+        // LyricsOVH API로 가사 가져오기
+        const lyricsResponse = await fetch(`${API_BASE_URL}/lyrics-fetch?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(song)}`);
+        
+        let lyrics = '';
+        if (lyricsResponse.ok) {
+            const lyricsData = await lyricsResponse.json();
+            lyrics = lyricsData.lyrics;
+        } else {
+            // Genius 정보 사용
+            lyrics = `[Genius에서 찾은 곡 정보]\n\n제목: ${geniusData.title}\n아티스트: ${geniusData.artist}\n\nGenius URL: ${geniusData.url}`;
+        }
+        
+        // 번역 API 호출
+        const translateResponse = await fetch(`${API_BASE_URL}/translate-lyrics`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lyrics: lyrics,
+                type: interpretType,
+                song: song,
+                artist: artist
+            })
+        });
+        
+        if (!translateResponse.ok) {
+            throw new Error('Translation failed');
+        }
+        
+        const translationData = await translateResponse.json();
+        
+        return {
+            originalLyrics: translationData.originalLyrics,
+            translatedLyrics: translationData.translatedLyrics,
+            songMeaning: translationData.songMeaning
+        };
+        
+    } catch (error) {
+        console.error('Interpretation error:', error);
+        // 에러 시 데모 데이터 반환
+        return {
+            originalLyrics: `"${song}" by ${artist}\n\n가사를 가져오는 중 오류가 발생했습니다.`,
+            translatedLyrics: getTranslatedDemo(song, artist, interpretType),
+            songMeaning: getSongMeaningDemo(song, artist, interpretType)
+        };
+    }
 }
 
 function getTranslatedDemo(song, artist, interpretType) {
