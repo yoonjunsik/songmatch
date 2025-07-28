@@ -9,6 +9,10 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers, body: '' };
     }
 
+    console.log('Translation function called');
+    console.log('Method:', event.httpMethod);
+    console.log('Body:', event.body);
+
     try {
         const { lyrics, type, song, artist } = JSON.parse(event.body);
         
@@ -78,36 +82,48 @@ exports.handler = async (event, context) => {
 
 // Google Translate 무료 API (translate.googleapis.com의 공개 엔드포인트 사용)
 async function translateWithGoogleFree(text) {
-    try {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ko&dt=t&q=${encodeURIComponent(text)}`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Google Translate error');
-        }
-        
-        const data = await response.json();
-        
-        // 번역된 텍스트 추출
-        let translated = '';
-        if (data && data[0]) {
-            data[0].forEach(sentence => {
-                if (sentence[0]) {
-                    translated += sentence[0];
-                }
+    const https = require('https');
+    
+    return new Promise((resolve, reject) => {
+        try {
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ko&dt=t&q=${encodeURIComponent(text)}`;
+            
+            https.get(url, (res) => {
+                let data = '';
+                
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+                
+                res.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(data);
+                        
+                        // 번역된 텍스트 추출
+                        let translated = '';
+                        if (parsed && parsed[0]) {
+                            parsed[0].forEach(sentence => {
+                                if (sentence[0]) {
+                                    translated += sentence[0];
+                                }
+                            });
+                        }
+                        
+                        resolve(translated || text);
+                    } catch (e) {
+                        console.error('Parse error:', e);
+                        resolve(text);
+                    }
+                });
+            }).on('error', (err) => {
+                console.error('Request error:', err);
+                resolve(text);
             });
+        } catch (error) {
+            console.error('Translation error:', error);
+            resolve(text);
         }
-        
-        return translated || text;
-    } catch (error) {
-        console.error('Translation error:', error);
-        return text;
-    }
+    });
 }
 
 // 텍스트를 청크로 분할

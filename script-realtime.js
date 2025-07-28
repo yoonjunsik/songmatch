@@ -496,6 +496,7 @@ async function startSongInterpretation() {
     
     try {
         const interpretType = document.querySelector('input[name="interpret-type"]:checked').value;
+        console.log('Starting interpretation:', interpretSelectedSong.name, 'Type:', interpretType);
         const interpretation = await interpretSong(interpretSelectedSong, interpretType);
         displayInterpretation(interpretation);
     } catch (error) {
@@ -535,8 +536,9 @@ async function interpretSong(track, interpretType) {
             lyrics = `[Genius에서 찾은 곡 정보]\n\n제목: ${geniusData.title}\n아티스트: ${geniusData.artist}\n\nGenius URL: ${geniusData.url}`;
         }
         
-        // 무료 번역 API 호출 (Google Free 또는 MyMemory)
-        const translateResponse = await fetch(`${API_BASE_URL}/translate-google-free`, {
+        // 실시간 번역 API 호출 (MyMemory API 사용)
+        console.log('Calling real-time translation API...');
+        const translateResponse = await fetch(`${API_BASE_URL}/translate-mymemory-api`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -549,16 +551,21 @@ async function interpretSong(track, interpretType) {
             })
         });
         
+        console.log('Translation response status:', translateResponse.status);
+        
         if (!translateResponse.ok) {
-            throw new Error('Translation failed');
+            const errorText = await translateResponse.text();
+            console.error('Translation error response:', errorText);
+            throw new Error('Translation failed: ' + translateResponse.status);
         }
         
         const translationData = await translateResponse.json();
+        console.log('Translation data received:', translationData);
         
         return {
-            originalLyrics: translationData.originalLyrics,
-            translatedLyrics: translationData.translatedLyrics,
-            songMeaning: translationData.songMeaning
+            originalLyrics: translationData.originalLyrics || lyrics,
+            translatedLyrics: translationData.translatedLyrics || '번역 실패',
+            songMeaning: translationData.songMeaning || '의미 분석 실패'
         };
         
     } catch (error) {
