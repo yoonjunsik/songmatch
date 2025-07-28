@@ -1,7 +1,11 @@
-// API 설정 (실제 사용시 환경변수로 관리)
-const SPOTIFY_CLIENT_ID = 'c0fc48fafef3410d99aa2773c88bb6b4';
-const SPOTIFY_CLIENT_SECRET = 'ee014e12ab01487f967248809e627d64';
-const YOUTUBE_API_KEY = 'AIzaSyCLIjOKfb-BdP0XzryFmGC3T-x51XrYWkc';
+// API 설정 - 보안을 위해 환경변수 또는 서버사이드에서 관리해야 함
+// 현재는 데모 목적으로만 사용
+const SPOTIFY_CLIENT_ID = 'your_spotify_client_id';
+const SPOTIFY_CLIENT_SECRET = 'your_spotify_client_secret';
+const YOUTUBE_API_KEY = 'your_youtube_api_key';
+
+// 데모용 하드코딩 데이터로 대체
+const DEMO_MODE = true;
 
 let spotifyAccessToken = null;
 let selectedSongs = {
@@ -27,9 +31,54 @@ async function getSpotifyToken() {
     return data.access_token;
 }
 
+// 데모용 검색 결과
+const DEMO_TRACKS = {
+    'blinding lights': [
+        {
+            id: 'demo1',
+            name: 'Blinding Lights',
+            artists: [{ id: 'weeknd', name: 'The Weeknd' }],
+            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526' }], name: 'After Hours' },
+            popularity: 100,
+            preview_url: null
+        }
+    ],
+    'runaway': [
+        {
+            id: 'demo2',
+            name: 'Runaway',
+            artists: [{ id: 'kanye', name: 'Kanye West' }],
+            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273d2e7566f9b8a7c68e9eb3fc6' }], name: 'My Beautiful Dark Twisted Fantasy' },
+            popularity: 95,
+            preview_url: null
+        }
+    ],
+    'lose yourself': [
+        {
+            id: 'demo3',
+            name: 'Lose Yourself',
+            artists: [{ id: 'eminem', name: 'Eminem' }],
+            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273726d48d93d02e1271774f023' }], name: '8 Mile' },
+            popularity: 98,
+            preview_url: null
+        }
+    ]
+};
+
 // Spotify 검색
 async function searchSpotify(query) {
     console.log('Searching Spotify for:', query);
+    
+    if (DEMO_MODE) {
+        console.log('Demo mode: using hardcoded data');
+        const searchKey = query.toLowerCase();
+        for (const [key, tracks] of Object.entries(DEMO_TRACKS)) {
+            if (key.includes(searchKey) || searchKey.includes(key)) {
+                return tracks;
+            }
+        }
+        return [];
+    }
     
     if (!spotifyAccessToken) {
         console.log('Getting Spotify token...');
