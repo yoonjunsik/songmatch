@@ -11,6 +11,7 @@
         <header>
             <h1>🎧 SongMatch</h1>
             <p>두 곡을 비교해서 어떤 곡이 더 명곡인지 알아보세요!</p>
+            <button class="interpret-button" id="interpret-btn">🎵 곡 해석</button>
         </header>
 
         <main>
@@ -110,8 +111,69 @@
         </div>
     </div>
 
+    <!-- 곡 해석 모달 창 -->
+    <div class="modal" id="interpret-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎵 곡 해석</h2>
+                <span class="close" id="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="song-search-section">
+                    <input type="text" id="interpret-song-input" placeholder="해석할 곡명 또는 아티스트를 입력하세요">
+                    <div class="autocomplete-dropdown" id="interpret-dropdown"></div>
+                    <div class="selected-song" id="interpret-selected"></div>
+                </div>
+                
+                <div class="interpretation-options">
+                    <h3>해석 옵션</h3>
+                    <label class="option-item">
+                        <input type="radio" name="interpret-type" value="direct" checked>
+                        <span>📝 직역 (단어 그대로)</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="interpret-type" value="cultural">
+                        <span>🌍 의역 (문화적 맥락 포함)</span>
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="interpret-type" value="hiphop">
+                        <span>🎤 힙합 특화 (슬랭, 은유, 분위기 해석)</span>
+                    </label>
+                </div>
+                
+                <button class="interpret-start-btn" id="start-interpret" disabled>해석 시작</button>
+                
+                <div class="interpretation-result" id="interpret-result" style="display: none;">
+                    <div class="result-header">
+                        <h3 id="result-song-title"></h3>
+                        <p id="result-artist"></p>
+                    </div>
+                    <div class="lyrics-section">
+                        <div class="original-lyrics">
+                            <h4>원문 가사</h4>
+                            <div id="original-text"></div>
+                        </div>
+                        <div class="translated-lyrics">
+                            <h4>한국어 해석</h4>
+                            <div id="translated-text"></div>
+                        </div>
+                    </div>
+                    <div class="song-meaning">
+                        <h4>곡의 의미 & 배경</h4>
+                        <div id="song-context"></div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="interpret-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>곡을 해석하고 있습니다...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script-realtime.js"></script>
     <script>
         function toggleFAQ() {
             const content = document.getElementById('faq-content');

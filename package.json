@@ -1,0 +1,16 @@
+{
+  "name": "songmatch",
+  "version": "1.0.0",
+  "description": "SongMatch - 명곡 비교 분석기",
+  "main": "index.html",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "dev": "echo 'Use local server for development'"
+  },
+  "keywords": ["music", "comparison", "spotify", "youtube"],
+  "author": "yoonjunsik",
+  "license": "MIT"
+}
