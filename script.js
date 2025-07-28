@@ -30,14 +30,14 @@ async function getSpotifyToken() {
     return data.access_token;
 }
 
-// 데모용 검색 결과
+// 데모용 검색 결과 (더 많은 곡 추가)
 const DEMO_TRACKS = {
     'blinding lights': [
         {
             id: 'demo1',
             name: 'Blinding Lights',
             artists: [{ id: 'weeknd', name: 'The Weeknd' }],
-            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526' }], name: 'After Hours' },
+            album: { images: [{ url: 'https://via.placeholder.com/300x300/1ed760/000000?text=Blinding+Lights' }], name: 'After Hours' },
             popularity: 100,
             preview_url: null
         }
@@ -47,7 +47,7 @@ const DEMO_TRACKS = {
             id: 'demo2',
             name: 'Runaway',
             artists: [{ id: 'kanye', name: 'Kanye West' }],
-            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273d2e7566f9b8a7c68e9eb3fc6' }], name: 'My Beautiful Dark Twisted Fantasy' },
+            album: { images: [{ url: 'https://via.placeholder.com/300x300/1ed760/000000?text=Runaway' }], name: 'My Beautiful Dark Twisted Fantasy' },
             popularity: 95,
             preview_url: null
         }
@@ -57,8 +57,28 @@ const DEMO_TRACKS = {
             id: 'demo3',
             name: 'Lose Yourself',
             artists: [{ id: 'eminem', name: 'Eminem' }],
-            album: { images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273726d48d93d02e1271774f023' }], name: '8 Mile' },
+            album: { images: [{ url: 'https://via.placeholder.com/300x300/1ed760/000000?text=Lose+Yourself' }], name: '8 Mile' },
             popularity: 98,
+            preview_url: null
+        }
+    ],
+    'shape of you': [
+        {
+            id: 'demo4',
+            name: 'Shape of You',
+            artists: [{ id: 'ed', name: 'Ed Sheeran' }],
+            album: { images: [{ url: 'https://via.placeholder.com/300x300/1ed760/000000?text=Shape+of+You' }], name: '÷ (Divide)' },
+            popularity: 99,
+            preview_url: null
+        }
+    ],
+    'bad guy': [
+        {
+            id: 'demo5',
+            name: 'bad guy',
+            artists: [{ id: 'billie', name: 'Billie Eilish' }],
+            album: { images: [{ url: 'https://via.placeholder.com/300x300/1ed760/000000?text=bad+guy' }], name: 'WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?' },
+            popularity: 97,
             preview_url: null
         }
     ]
