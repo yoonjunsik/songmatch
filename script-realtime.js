@@ -535,8 +535,8 @@ async function interpretSong(track, interpretType) {
             lyrics = `[Genius에서 찾은 곡 정보]\n\n제목: ${geniusData.title}\n아티스트: ${geniusData.artist}\n\nGenius URL: ${geniusData.url}`;
         }
         
-        // 번역 API 호출
-        const translateResponse = await fetch(`${API_BASE_URL}/translate-lyrics`, {
+        // 무료 번역 API 호출 (Google Free 또는 MyMemory)
+        const translateResponse = await fetch(`${API_BASE_URL}/translate-google-free`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
