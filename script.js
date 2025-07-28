@@ -9,6 +9,8 @@ let selectedSongs = {
     song2: null
 };
 
+let interpretSelectedSong = null;
+
 // Spotify 토큰 가져오기
 async function getSpotifyToken() {
     const response = await fetch('https://accounts.spotify.com/api/token', {
@@ -27,7 +29,10 @@ async function getSpotifyToken() {
 
 // Spotify 검색
 async function searchSpotify(query) {
+    console.log('Searching Spotify for:', query);
+    
     if (!spotifyAccessToken) {
+        console.log('Getting Spotify token...');
         await getSpotifyToken();
     }
     
@@ -38,12 +43,21 @@ async function searchSpotify(query) {
             }
         });
         
+        console.log('Spotify response status:', response.status);
+        
         if (response.status === 401) {
+            console.log('Token expired, refreshing...');
             await getSpotifyToken();
             return searchSpotify(query);
         }
         
+        if (!response.ok) {
+            console.error('Spotify API error:', response.status, response.statusText);
+            return [];
+        }
+        
         const data = await response.json();
+        console.log('Spotify search results:', data.tracks.items.length, 'tracks found');
         return data.tracks.items;
     } catch (error) {
         console.error('Spotify 검색 오류:', error);
@@ -798,5 +812,222 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('song1-dropdown').style.display = 'none';
             document.getElementById('song2-dropdown').style.display = 'none';
         }
+        if (!e.target.closest('.song-search-section')) {
+            document.getElementById('interpret-dropdown').style.display = 'none';
+        }
     });
+    
+    // 곡 해석 모달 기능
+    const interpretBtn = document.getElementById('interpret-btn');
+    const interpretModal = document.getElementById('interpret-modal');
+    const closeModal = document.getElementById('close-modal');
+    const interpretInput = document.getElementById('interpret-song-input');
+    const startInterpretBtn = document.getElementById('start-interpret');
+    
+    console.log('곡 해석 요소들:', {
+        interpretBtn,
+        interpretModal,
+        closeModal,
+        interpretInput,
+        startInterpretBtn
+    });
+    
+    // 모달 열기
+    if (interpretBtn) {
+        interpretBtn.addEventListener('click', () => {
+            console.log('곡 해석 버튼 클릭됨');
+            interpretModal.style.display = 'block';
+        });
+    } else {
+        console.error('곡 해석 버튼을 찾을 수 없습니다');
+    }
+    
+    // 모달 닫기
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            interpretModal.style.display = 'none';
+        });
+    }
+    
+    // 모달 외부 클릭시 닫기
+    window.addEventListener('click', (e) => {
+        if (e.target === interpretModal) {
+            interpretModal.style.display = 'none';
+        }
+    });
+    
+    // 곡 해석 검색
+    let interpretSearchTimeout;
+    if (interpretInput) {
+        interpretInput.addEventListener('input', (e) => {
+            clearTimeout(interpretSearchTimeout);
+            interpretSearchTimeout = setTimeout(async () => {
+                if (e.target.value.trim()) {
+                    console.log('해석용 곡 검색:', e.target.value);
+                    const tracks = await searchSpotify(e.target.value);
+                    showInterpretAutocomplete(tracks);
+                } else {
+                    document.getElementById('interpret-dropdown').style.display = 'none';
+                }
+            }, 300);
+        });
+    }
+    
+    // 해석 시작 버튼
+    if (startInterpretBtn) {
+        startInterpretBtn.addEventListener('click', startSongInterpretation);
+    }
 });
+
+// 곡 해석용 자동완성 표시
+function showInterpretAutocomplete(tracks) {
+    const dropdown = document.getElementById('interpret-dropdown');
+    dropdown.innerHTML = '';
+    
+    if (tracks.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    tracks.forEach(track => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = `
+            <img src="${track.album.images[0]?.url || ''}" alt="">
+            <div class="autocomplete-item-info">
+                <div class="autocomplete-item-title">${track.name}</div>
+                <div class="autocomplete-item-artist">${track.artists[0].name}</div>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => selectInterpretSong(track));
+        dropdown.appendChild(item);
+    });
+    
+    dropdown.style.display = 'block';
+}
+
+// 해석할 곡 선택
+function selectInterpretSong(track) {
+    interpretSelectedSong = track;
+    
+    const input = document.getElementById('interpret-song-input');
+    const dropdown = document.getElementById('interpret-dropdown');
+    const selectedDiv = document.getElementById('interpret-selected');
+    const startBtn = document.getElementById('start-interpret');
+    
+    input.value = `${track.name} - ${track.artists[0].name}`;
+    dropdown.style.display = 'none';
+    
+    selectedDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px; padding: 15px; background-color: #333; border-radius: 8px;">
+            <img src="${track.album.images[0]?.url || ''}" alt="" style="width: 50px; height: 50px; border-radius: 8px;">
+            <div>
+                <div style="font-weight: bold; color: #1ed760;">${track.name}</div>
+                <div style="color: #b3b3b3;">${track.artists[0].name}</div>
+            </div>
+        </div>
+    `;
+    selectedDiv.style.display = 'block';
+    
+    // 해석 시작 버튼 활성화
+    startBtn.disabled = false;
+}
+
+// 곡 해석 시작
+async function startSongInterpretation() {
+    if (!interpretSelectedSong) return;
+    
+    const loading = document.getElementById('interpret-loading');
+    const result = document.getElementById('interpret-result');
+    const startBtn = document.getElementById('start-interpret');
+    
+    // 로딩 표시
+    loading.style.display = 'block';
+    result.style.display = 'none';
+    startBtn.disabled = true;
+    
+    try {
+        // 선택된 해석 옵션 가져오기
+        const interpretType = document.querySelector('input[name="interpret-type"]:checked').value;
+        
+        // 곡 해석 실행
+        const interpretation = await interpretSong(interpretSelectedSong, interpretType);
+        
+        // 결과 표시
+        displayInterpretation(interpretation);
+        
+    } catch (error) {
+        console.error('곡 해석 중 오류 발생:', error);
+        result.innerHTML = '<div style="text-align: center; color: #ff6b6b; padding: 30px;">해석 중 오류가 발생했습니다. 다시 시도해주세요.</div>';
+        result.style.display = 'block';
+    } finally {
+        loading.style.display = 'none';
+        startBtn.disabled = false;
+    }
+}
+
+// 곡 해석 함수
+async function interpretSong(track, interpretType) {
+    const song = track.name;
+    const artist = track.artists[0].name;
+    
+    // 실제 구현에서는 서버의 AI API를 사용해야 함
+    // 여기서는 데모를 위한 시뮬레이션
+    
+    return {
+        originalLyrics: `[Sample section for "${song}" by ${artist}]
+        
+This is a placeholder for original lyrics.
+In a real implementation, you would:
+1. Fetch lyrics from a lyrics API
+2. Use AI translation service
+3. Apply cultural context interpretation`,
+        
+        translatedLyrics: getTranslatedDemo(song, artist, interpretType),
+        songMeaning: getSongMeaningDemo(song, artist, interpretType)
+    };
+}
+
+// 해석 타입별 데모 번역
+function getTranslatedDemo(song, artist, interpretType) {
+    const interpretLabels = {
+        'direct': '직역',
+        'cultural': '의역 (문화적 맥락)',
+        'hiphop': '힙합 특화 해석'
+    };
+    
+    return `[${interpretLabels[interpretType]}] "${song}" - ${artist}
+
+이곳에 ${interpretLabels[interpretType]}된 가사가 표시됩니다.
+
+실제 구현에서는:
+- 외부 가사 API에서 원문 가사를 가져오고
+- AI 번역 서비스를 통해 선택된 방식으로 해석합니다
+- 힙합 특화 해석의 경우 슬랭, 은유, 문화적 맥락을 고려합니다`;
+}
+
+// 곡 의미 해석 데모
+function getSongMeaningDemo(song, artist, interpretType) {
+    const meanings = {
+        'direct': `"${song}"의 직역적 해석: 가사의 표면적 의미를 중심으로 한 해석이 여기에 표시됩니다.`,
+        'cultural': `"${song}"의 문화적 맥락 해석: 서구 문화의 표현을 한국 문화에 맞게 재해석한 내용이 여기에 표시됩니다.`,
+        'hiphop': `"${song}"의 힙합 특화 해석: 힙합 문화의 맥락, 슬랭, 은유적 표현을 고려한 깊이 있는 해석이 여기에 표시됩니다.`
+    };
+    
+    return meanings[interpretType] || meanings['cultural'];
+}
+
+// 해석 결과 표시
+function displayInterpretation(interpretation) {
+    const result = document.getElementById('interpret-result');
+    const song = interpretSelectedSong;
+    
+    document.getElementById('result-song-title').textContent = song.name;
+    document.getElementById('result-artist').textContent = song.artists[0].name;
+    document.getElementById('original-text').textContent = interpretation.originalLyrics;
+    document.getElementById('translated-text').textContent = interpretation.translatedLyrics;
+    document.getElementById('song-context').textContent = interpretation.songMeaning;
+    
+    result.style.display = 'block';
+}
