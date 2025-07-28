@@ -1,11 +1,10 @@
-// API 설정 - 보안을 위해 환경변수 또는 서버사이드에서 관리해야 함
-// 현재는 데모 목적으로만 사용
-const SPOTIFY_CLIENT_ID = 'your_spotify_client_id';
-const SPOTIFY_CLIENT_SECRET = 'your_spotify_client_secret';
-const YOUTUBE_API_KEY = 'your_youtube_api_key';
+// ⚠️ 보안상 API 키는 완전히 제거되었습니다
+// 실제 서비스에서는 서버사이드에서 API를 호출해야 합니다
+// 현재는 데모 모드로만 작동합니다
 
-// 데모용 하드코딩 데이터로 대체
 const DEMO_MODE = true;
+
+// API 키가 필요한 기능들은 데모 데이터로 대체
 
 let spotifyAccessToken = null;
 let selectedSongs = {
