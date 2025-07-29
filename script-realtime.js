@@ -156,7 +156,7 @@ async function getArtistAwards(artistName) {
     return cachedData[artistName] || { grammy: '정보 없음', other: '정보 없음' };
 }
 
-// 점수 계산 (기존과 동일)
+// 점수 계산 (세분화된 버전)
 function calculateScore(data) {
     const scores = {
         trackSpotify: 0,
@@ -168,35 +168,35 @@ function calculateScore(data) {
         total: 0
     };
     
-    // 곡 점수 계산
-    if (data.spotifyPopularity <= 20) scores.trackSpotify = 8;
-    else if (data.spotifyPopularity <= 40) scores.trackSpotify = 16;
-    else if (data.spotifyPopularity <= 60) scores.trackSpotify = 24;
-    else if (data.spotifyPopularity <= 80) scores.trackSpotify = 32;
-    else scores.trackSpotify = 40;
+    // 곡 점수 계산 (최대 40점)
+    // Spotify 인기도: 선형 스케일 (0-100 → 0-40)
+    scores.trackSpotify = (data.spotifyPopularity / 100) * 40;
     
-    if (data.youtubeViews < 10000000) scores.trackYoutube = 8;
-    else if (data.youtubeViews < 50000000) scores.trackYoutube = 16;
-    else if (data.youtubeViews < 200000000) scores.trackYoutube = 24;
-    else if (data.youtubeViews < 1000000000) scores.trackYoutube = 32;
-    else scores.trackYoutube = 40;
+    // YouTube 조회수: 로그 스케일 (더 자연스러운 분포)
+    // 1뷰 = 0점, 10억뷰 = 40점
+    const viewsLog = Math.log10(Math.max(data.youtubeViews, 1));
+    // log10(1) = 0, log10(1B) = 9, 정규화하여 0-40점으로
+    scores.trackYoutube = Math.min((viewsLog / 9) * 40, 40);
     
-    // 아티스트 점수 계산
-    if (data.artistPopularity <= 20) scores.artistSpotify = 2;
-    else if (data.artistPopularity <= 40) scores.artistSpotify = 4;
-    else if (data.artistPopularity <= 60) scores.artistSpotify = 6;
-    else if (data.artistPopularity <= 80) scores.artistSpotify = 8;
-    else scores.artistSpotify = 10;
+    // 아티스트 점수 계산 (최대 10점)
+    // Spotify 아티스트 인기도: 선형 스케일 (0-100 → 0-10)
+    scores.artistSpotify = (data.artistPopularity / 100) * 10;
     
-    if (data.youtubeSubscribers < 100000) scores.artistYoutube = 2;
-    else if (data.youtubeSubscribers < 1000000) scores.artistYoutube = 4;
-    else if (data.youtubeSubscribers < 5000000) scores.artistYoutube = 6;
-    else if (data.youtubeSubscribers < 10000000) scores.artistYoutube = 8;
-    else scores.artistYoutube = 10;
+    // YouTube 구독자 수: 로그 스케일
+    // 1명 = 0점, 1억명 = 10점
+    const subsLog = Math.log10(Math.max(data.youtubeSubscribers, 1));
+    // log10(1) = 0, log10(100M) = 8, 정규화하여 0-10점으로
+    scores.artistYoutube = Math.min((subsLog / 8) * 10, 10);
     
-    scores.trackTotal = scores.trackSpotify + scores.trackYoutube;
-    scores.artistTotal = scores.artistSpotify + scores.artistYoutube;
-    scores.total = scores.trackTotal + scores.artistTotal;
+    // 소수점 첫째 자리까지 반올림
+    scores.trackSpotify = Math.round(scores.trackSpotify * 10) / 10;
+    scores.trackYoutube = Math.round(scores.trackYoutube * 10) / 10;
+    scores.artistSpotify = Math.round(scores.artistSpotify * 10) / 10;
+    scores.artistYoutube = Math.round(scores.artistYoutube * 10) / 10;
+    
+    scores.trackTotal = Math.round((scores.trackSpotify + scores.trackYoutube) * 10) / 10;
+    scores.artistTotal = Math.round((scores.artistSpotify + scores.artistYoutube) * 10) / 10;
+    scores.total = Math.round((scores.trackTotal + scores.artistTotal) * 10) / 10;
     
     return scores;
 }
@@ -320,13 +320,23 @@ async function compareSongs() {
     }
 }
 
-// 결과 표시 (기존과 동일하지만 실시간 데이터 표시)
+// 결과 표시 (세분화된 점수 표시)
 function displayResults(song1, song2, scores1, scores2, data1, data2) {
     const winnerText = document.getElementById('winner-text');
+    const scoreDiff = Math.abs(scores1.total - scores2.total);
+    
     if (scores1.total > scores2.total) {
-        winnerText.textContent = `🏆 "${song1.name}"이(가) 더 명곡입니다! (${scores1.total}점 vs ${scores2.total}점)`;
+        if (scoreDiff < 2) {
+            winnerText.textContent = `🏆 "${song1.name}"이(가) 근소한 차이로 승리! (${scores1.total}점 vs ${scores2.total}점)`;
+        } else {
+            winnerText.textContent = `🏆 "${song1.name}"이(가) 더 명곡입니다! (${scores1.total}점 vs ${scores2.total}점)`;
+        }
     } else if (scores2.total > scores1.total) {
-        winnerText.textContent = `🏆 "${song2.name}"이(가) 더 명곡입니다! (${scores2.total}점 vs ${scores1.total}점)`;
+        if (scoreDiff < 2) {
+            winnerText.textContent = `🏆 "${song2.name}"이(가) 근소한 차이로 승리! (${scores2.total}점 vs ${scores1.total}점)`;
+        } else {
+            winnerText.textContent = `🏆 "${song2.name}"이(가) 더 명곡입니다! (${scores2.total}점 vs ${scores1.total}점)`;
+        }
     } else {
         winnerText.textContent = `🏆 두 곡 모두 명곡입니다! (${scores1.total}점 동점)`;
     }
@@ -343,16 +353,37 @@ function displaySongScore(elementId, song, scores, data) {
     scoreElement.querySelector('.total-score').textContent = scores.total + '점';
     
     const breakdown = scoreElement.querySelector('.score-breakdown');
+    
+    // 진행바 생성 함수
+    function createProgressBar(value, max, color = '#1ed760') {
+        const percentage = (value / max) * 100;
+        return `
+            <div style="background-color: #333; border-radius: 10px; height: 8px; margin: 5px 0; overflow: hidden;">
+                <div style="background-color: ${color}; height: 100%; width: ${percentage}%; transition: width 0.5s ease;"></div>
+            </div>
+        `;
+    }
+    
+    // 조회수/구독자수 포맷팅 함수
+    function formatNumber(num) {
+        if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+    
     breakdown.innerHTML = `
         <div class="score-category">
             <h5 style="color: #1ed760; margin: 10px 0;">🎵 곡 점수 (${scores.trackTotal}/80점)</h5>
             <div class="score-item">
                 <span class="score-label">Spotify 인기도</span>
                 <span class="score-value">${data.spotifyPopularity}/100 (${scores.trackSpotify}점)</span>
+                ${createProgressBar(scores.trackSpotify, 40)}
             </div>
             <div class="score-item">
                 <span class="score-label">YouTube 조회수</span>
-                <span class="score-value">${(data.youtubeViews / 1000000).toFixed(1)}M (${scores.trackYoutube}점)</span>
+                <span class="score-value">${formatNumber(data.youtubeViews)} views (${scores.trackYoutube}점)</span>
+                ${createProgressBar(scores.trackYoutube, 40, '#ff0000')}
             </div>
         </div>
         
@@ -361,10 +392,23 @@ function displaySongScore(elementId, song, scores, data) {
             <div class="score-item">
                 <span class="score-label">Spotify 아티스트 인기도</span>
                 <span class="score-value">${data.artistPopularity}/100 (${scores.artistSpotify}점)</span>
+                ${createProgressBar(scores.artistSpotify, 10)}
             </div>
             <div class="score-item">
                 <span class="score-label">YouTube 구독자</span>
-                <span class="score-value">${(data.youtubeSubscribers / 1000000).toFixed(1)}M (${scores.artistYoutube}점)</span>
+                <span class="score-value">${formatNumber(data.youtubeSubscribers)} subs (${scores.artistYoutube}점)</span>
+                ${createProgressBar(scores.artistYoutube, 10, '#ff0000')}
+            </div>
+        </div>
+        
+        <div class="score-summary" style="margin-top: 15px; padding: 15px; background-color: #1a1a1a; border-radius: 8px; border: 1px solid #333;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #1ed760; font-weight: bold;">총점</span>
+                <span style="font-size: 1.5rem; font-weight: bold; color: #1ed760;">${scores.total}/100점</span>
+            </div>
+            ${createProgressBar(scores.total, 100, '#1ed760')}
+            <div style="text-align: center; margin-top: 10px; color: #999; font-size: 0.9rem;">
+                상위 ${Math.round(100 - scores.total)}% 수준
             </div>
         </div>
         
