@@ -133,27 +133,55 @@ async function getYouTubeChannelSubscribers(artistName) {
     return 0;
 }
 
-// 아티스트 수상 정보 가져오기 (기존 하드코딩 데이터 사용)
+// 아티스트 수상 정보 가져오기 (Wikipedia API 사용)
 async function getArtistAwards(artistName) {
-    const cachedData = {
-        'Kendrick Lamar': { grammy: '17회 수상, 50회 노미네이트', other: 'BET Awards 29회, MTV VMA 7회' },
-        'Beyoncé': { grammy: '32회 수상, 88회 노미네이트', other: 'MTV VMA 29회, BET Awards 29회' },
-        'Taylor Swift': { grammy: '12회 수상, 46회 노미네이트', other: 'AMA 40회, Billboard Music Awards 29회' },
-        'Adele': { grammy: '16회 수상, 18회 노미네이트', other: 'BRIT Awards 12회, Billboard Music Awards 18회' },
-        'Bruno Mars': { grammy: '15회 수상, 31회 노미네이트', other: 'AMA 7회, Soul Train Awards 8회' },
-        'Billie Eilish': { grammy: '7회 수상, 13회 노미네이트', other: 'AMA 6회, MTV VMA 3회' },
-        'Kanye West': { grammy: '24회 수상, 75회 노미네이트', other: 'BET Awards 17회, Billboard Music Awards 17회' },
-        'Ye': { grammy: '24회 수상, 75회 노미네이트', other: 'BET Awards 17회, Billboard Music Awards 17회' },
-        'JAY-Z': { grammy: '24회 수상, 88회 노미네이트', other: 'BET Awards 14회, MTV VMA 14회' },
-        'Jay-Z': { grammy: '24회 수상, 88회 노미네이트', other: 'BET Awards 14회, MTV VMA 14회' },
-        'Drake': { grammy: '5회 수상, 51회 노미네이트', other: 'Billboard Music Awards 34회, AMA 6회' },
-        'The Weeknd': { grammy: '4회 수상, 13회 노미네이트', other: 'Billboard Music Awards 20회, AMA 6회' },
-        'Ed Sheeran': { grammy: '4회 수상, 15회 노미네이트', other: 'BRIT Awards 6회, Ivor Novello Awards 7회' },
-        'Ariana Grande': { grammy: '2회 수상, 15회 노미네이트', other: 'MTV VMA 5회, Billboard Music Awards 30회' },
-        'Eminem': { grammy: '15회 수상, 44회 노미네이트', other: 'MTV VMA 13회, Billboard Music Awards 17회' }
-    };
-    
-    return cachedData[artistName] || { grammy: '정보 없음', other: '정보 없음' };
+    try {
+        console.log('Fetching awards info for:', artistName);
+        
+        // Wikipedia API 호출
+        const response = await fetch(`${API_BASE_URL}/wikipedia-artist?artist=${encodeURIComponent(artistName)}`);
+        
+        if (!response.ok) {
+            throw new Error('Wikipedia API error');
+        }
+        
+        const data = await response.json();
+        console.log('Wikipedia data:', data);
+        
+        // Wikipedia에서 정보를 찾았으면 반환
+        if (data.grammy !== '정보 없음' || data.other !== '정보 없음') {
+            return {
+                grammy: data.grammy,
+                other: data.other
+            };
+        }
+        
+        // Wikipedia에서 못 찾았으면 캐시된 데이터 확인
+        const cachedData = {
+            'Kendrick Lamar': { grammy: '17회 수상, 50회 노미네이트', other: 'BET Awards 29회, MTV VMA 7회' },
+            'Beyoncé': { grammy: '32회 수상, 88회 노미네이트', other: 'MTV VMA 29회, BET Awards 29회' },
+            'Taylor Swift': { grammy: '12회 수상, 46회 노미네이트', other: 'AMA 40회, Billboard Music Awards 29회' },
+            'Adele': { grammy: '16회 수상, 18회 노미네이트', other: 'BRIT Awards 12회, Billboard Music Awards 18회' },
+            'Bruno Mars': { grammy: '15회 수상, 31회 노미네이트', other: 'AMA 7회, Soul Train Awards 8회' },
+            'Billie Eilish': { grammy: '7회 수상, 13회 노미네이트', other: 'AMA 6회, MTV VMA 3회' },
+            'Kanye West': { grammy: '24회 수상, 75회 노미네이트', other: 'BET Awards 17회, Billboard Music Awards 17회' },
+            'Ye': { grammy: '24회 수상, 75회 노미네이트', other: 'BET Awards 17회, Billboard Music Awards 17회' },
+            'JAY-Z': { grammy: '24회 수상, 88회 노미네이트', other: 'BET Awards 14회, MTV VMA 14회' },
+            'Jay-Z': { grammy: '24회 수상, 88회 노미네이트', other: 'BET Awards 14회, MTV VMA 14회' },
+            'Drake': { grammy: '5회 수상, 51회 노미네이트', other: 'Billboard Music Awards 34회, AMA 6회' },
+            'The Weeknd': { grammy: '4회 수상, 13회 노미네이트', other: 'Billboard Music Awards 20회, AMA 6회' },
+            'Ed Sheeran': { grammy: '4회 수상, 15회 노미네이트', other: 'BRIT Awards 6회, Ivor Novello Awards 7회' },
+            'Ariana Grande': { grammy: '2회 수상, 15회 노미네이트', other: 'MTV VMA 5회, Billboard Music Awards 30회' },
+            'Eminem': { grammy: '15회 수상, 44회 노미네이트', other: 'MTV VMA 13회, Billboard Music Awards 17회' }
+        };
+        
+        return cachedData[artistName] || { grammy: '정보 없음', other: '정보 없음' };
+        
+    } catch (error) {
+        console.error('Error fetching artist awards:', error);
+        // 에러 시 기본값 반환
+        return { grammy: '정보 없음', other: '정보 없음' };
+    }
 }
 
 // 점수 계산 (세분화된 버전)
