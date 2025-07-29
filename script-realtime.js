@@ -524,16 +524,20 @@ async function interpretSong(track, interpretType) {
         
         const geniusData = await geniusResponse.json();
         
-        // LyricsOVH API로 가사 가져오기
-        const lyricsResponse = await fetch(`${API_BASE_URL}/lyrics-fetch?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(song)}`);
+        // 새로운 가사 API로 가사 가져오기
+        console.log('Fetching lyrics...');
+        const lyricsResponse = await fetch(`${API_BASE_URL}/lyrics-musixmatch?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(song)}`);
         
         let lyrics = '';
         if (lyricsResponse.ok) {
             const lyricsData = await lyricsResponse.json();
-            lyrics = lyricsData.lyrics;
-        } else {
-            // Genius 정보 사용
-            lyrics = `[Genius에서 찾은 곡 정보]\n\n제목: ${geniusData.title}\n아티스트: ${geniusData.artist}\n\nGenius URL: ${geniusData.url}`;
+            console.log('Lyrics data:', lyricsData);
+            lyrics = lyricsData.lyrics || '';
+        }
+        
+        // 가사가 없으면 Genius 정보 사용
+        if (!lyrics || lyrics.includes('[가사를 찾을 수 없습니다]')) {
+            lyrics = `[${song} - ${artist}]\n\n가사를 로드하는 중...\n\n이 곡의 실제 가사는 저작권 보호를 받고 있습니다.\n번역 데모를 위한 샘플 텍스트가 제공됩니다.`;
         }
         
         // 실시간 번역 API 호출 (MyMemory API 사용)
