@@ -126,11 +126,72 @@ async function getYouTubeViews(songTitle, artistName) {
     }
 }
 
-// YouTube 채널 구독자 수 가져오기 (복잡하므로 일단 0으로 설정)
+// YouTube 채널 구독자 수 가져오기
 async function getYouTubeChannelSubscribers(artistName) {
-    // 이 기능은 복잡하므로 일단 0으로 반환
-    // 필요시 나중에 구현
-    return 0;
+    try {
+        console.log('Getting YouTube channel subscribers for:', artistName);
+        
+        // 먼저 아티스트의 YouTube 채널을 검색
+        const searchQuery = `${artistName} official artist channel`;
+        const searchData = await searchYouTube(searchQuery);
+        
+        if (!searchData.items || searchData.items.length === 0) {
+            console.log('No YouTube channel found for:', artistName);
+            return 0;
+        }
+        
+        // 검색 결과에서 공식 아티스트 채널 찾기
+        let channelId = null;
+        
+        for (const item of searchData.items) {
+            // 채널 검색 결과 우선
+            if (item.id.kind === 'youtube#channel') {
+                channelId = item.id.channelId;
+                break;
+            }
+            // 비디오 결과에서 채널 ID 추출
+            else if (item.id.kind === 'youtube#video') {
+                const channelTitle = item.snippet.channelTitle.toLowerCase();
+                const artistLower = artistName.toLowerCase();
+                
+                // 공식 채널인지 확인 (VEVO, Official, 아티스트 이름 포함)
+                if (channelTitle.includes(artistLower) || 
+                    channelTitle.includes('vevo') || 
+                    channelTitle.includes('official')) {
+                    channelId = item.snippet.channelId;
+                    console.log('Found channel from video:', channelTitle);
+                    break;
+                }
+            }
+        }
+        
+        if (!channelId) {
+            // 첫 번째 결과의 채널 ID 사용 (fallback)
+            channelId = searchData.items[0].snippet?.channelId;
+        }
+        
+        if (!channelId) {
+            console.log('No channel ID found for:', artistName);
+            return 0;
+        }
+        
+        // 채널 통계 가져오기
+        console.log('Fetching channel stats for ID:', channelId);
+        const response = await fetch(`${API_BASE_URL}/youtube-channel?channelId=${channelId}`);
+        
+        if (!response.ok) {
+            throw new Error('Channel stats API error');
+        }
+        
+        const channelData = await response.json();
+        console.log('Channel data:', channelData);
+        
+        return channelData.subscriberCount || 0;
+        
+    } catch (error) {
+        console.error('Error getting YouTube subscribers:', error);
+        return 0;
+    }
 }
 
 // 아티스트 수상 정보 가져오기 (Wikipedia API 사용)
